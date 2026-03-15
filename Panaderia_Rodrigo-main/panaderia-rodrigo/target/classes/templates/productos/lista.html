@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<!--
+  Vista LISTADO DE PRODUCTOS: muestra el catálogo completo con
+  dos funcionalidades importantes que no habíamos visto antes:
+  ✅ BÚSQUEDA por texto (barra de búsqueda con GET)
+  ✅ FILTRO por categoría (chips de navegación activos)
+
+  Es la vista más "pública" del sistema: los productos son visibles
+  para todos, pero las acciones de editar/eliminar solo las ve el ADMIN.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>🍞 Productos - Panadería Rodrigo</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+</head>
+
+<body>
+
+<!-- ============================================================
+     NAVBAR COMPLETA
+     Esta vista es semi-pública: cualquiera puede ver productos,
+     por eso el link "Ingresar" está disponible para anónimos
+     (a diferencia de la vista de pedidos que no lo tenía).
+     ============================================================ -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <span class="brand-icon">🍞</span>
+        <a th:href="@{/}" class="brand-name">Panadería Rodrigo</a>
+    </div>
+    <div class="navbar-menu">
+        <!-- "active" marca visualmente en qué sección estamos -->
+        <a th:href="@{/productos}" class="nav-link active">Productos</a>
+        <a th:href="@{/clientes}" class="nav-link"
+           sec:authorize="hasAnyRole('ADMIN','EMPLEADO')">Clientes</a>
+        <a th:href="@{/pedidos}"  class="nav-link"
+           sec:authorize="hasAnyRole('ADMIN','EMPLEADO')">Pedidos</a>
+    </div>
+    <div class="navbar-auth">
+        <span sec:authorize="isAuthenticated()" class="user-info">
+            👤 <span sec:authentication="name"></span>
+            <span sec:authorize="hasRole('ADMIN')" class="badge badge-admin">ADMIN</span>
+        </span>
+        <form th:action="@{/logout}" method="post"
+              sec:authorize="isAuthenticated()" style="display:inline">
+            <button type="submit" class="btn-logout">Salir</button>
+        </form>
+        <!-- Visible solo para NO autenticados: invita a iniciar sesión -->
+        <a th:href="@{/login}" sec:authorize="isAnonymous()" class="btn-login">Ingresar</a>
+    </div>
+</nav>
+
+
+<main class="main-content">
+
+    <!-- Mensaje flash de éxito (ej: "Producto eliminado correctamente") -->
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+
+    <div class="page-header">
+        <h1 class="page-title">🥐 Nuestros Productos</h1>
+        <!--
+          Botón "Nuevo Producto" solo visible para ADMIN.
+          Combina sec:authorize (seguridad de vista) con el link al formulario.
+          La seguridad real del endpoint /productos/nuevo debe estar
+          también en el SecurityConfig o con @PreAuthorize en el controlador.
+        -->
+        <a th:href="@{/productos/nuevo}" class="btn btn-primary"
+           sec:authorize="hasRole('ADMIN')">+ Nuevo Producto</a>
+    </div>
+
+
+    <!-- ── BARRA DE FILTROS ──────────────────────────────────────
+         Contiene dos formas de filtrar: búsqueda por texto y
+         filtro por categoría. Ambos usan GET (no POST) porque
+         los filtros de búsqueda deben ser "compartibles" como URL.
+         Ej: /productos?buscar=torta&categoria=Torta
+         Esto permite copiar/pegar la URL filtrada o guardarla en favoritos.
+    ─────────────────────────────────────────────────────────── -->
+    <div class="filtros-bar">
+
+        <!--
+          FORMULARIO DE BÚSQUEDA POR TEXTO:
+          method="get" → los parámetros van en la URL como query string.
+          Al enviar, genera: /productos?buscar=medialunas
+
+          En el controlador:
+            @GetMapping("/productos")
+            public String listar(@RequestParam(required=false) String buscar, Model model)
+
+          th:value="${buscar}" → pre-rellena el input con el término buscado.
+          Así el usuario ve qué buscó después de que la página recargó.
+          Sin esto, el campo quedaría vacío aunque haya resultados filtrados.
+        -->
+        <form th:action="@{/productos}" method="get" class="search-form">
+            <input type="text"
+                   name="buscar"
+                   class="form-input search-input"
+                   placeholder="🔍 Buscar producto..."
+                   th:value="${buscar}"/>
+            <button type="submit" class="btn btn-secondary">Buscar</button>
+
+            <!--
+              "Limpiar" como link simple a /productos (sin parámetros).
+              Más simple y efectivo que un button type="reset"
+              (que solo limpia el campo pero NO recarga con resultados sin filtro).
+            -->
+            <a th:href="@{/productos}" class="btn btn-ghost">Limpiar</a>
+        </form>
+
+
+        <!-- ── FILTRO POR CATEGORÍA (CHIPS) ─────────────────────────
+             Patrón de UX muy popular: chips/etiquetas clickeables
+             que filtran resultados al instante.
+             Cada chip es un link GET con el parámetro categoria en la URL.
+             Ej: /productos?categoria=Torta
+        ─────────────────────────────────────────────────────────── -->
+        <div class="categorias-filter">
+
+            <!--
+              Chip "Todos": link a /productos sin parámetros para limpiar el filtro.
+
+              th:classappend con operador ternario:
+              ${categoriaSeleccionada == null} ? ' active' : ''
+              → Si NO hay categoría seleccionada (estamos viendo todos),
+                agrega la clase "active" al chip "Todos".
+              → Si hay una categoría activa, no agrega nada ('').
+
+              Esto permite destacar visualmente cuál filtro está activo.
+            -->
+            <a th:href="@{/productos}"
+               class="categoria-chip"
+               th:classappend="${categoriaSeleccionada == null} ? ' active' : ''">
+                Todos
+            </a>
+
+            <!--
+              Chips dinámicos generados desde la lista "categorias" del Model.
+              El controlador envía todas las categorías existentes:
+                model.addAttribute("categorias", productoService.obtenerCategorias())
+
+              th:href="@{/productos(categoria=${cat})}"
+              → Genera la URL con el parámetro de categoría.
+                @{} con parámetros entre paréntesis: (clave=valor).
+                Resultado: /productos?categoria=Torta
+
+              th:classappend="${categoriaSeleccionada == cat} ? ' active' : ''"
+              → Agrega "active" al chip cuya categoría coincide
+                con la categoría actualmente seleccionada.
+              → Así el usuario siempre sabe qué filtro está aplicado.
+            -->
+            <a th:each="cat : ${categorias}"
+               th:href="@{/productos(categoria=${cat})}"
+               th:text="${cat}"
+               class="categoria-chip"
+               th:classappend="${categoriaSeleccionada == cat} ? ' active' : ''">
+            </a>
+        </div>
+    </div>
+
+
+    <!-- ── GRID DE PRODUCTOS ─────────────────────────────────────
+         Diseño en tarjetas (cards) en vez de tabla: mejor para
+         mostrar catálogos visuales donde importa la presentación.
+         Las tablas son mejores para datos comparativos con muchas columnas
+         (como la lista de pedidos). Las cards son mejores para
+         catálogos, portfolios y galerías de productos.
+    ─────────────────────────────────────────────────────────── -->
+    <div class="productos-grid" th:if="${!productos.isEmpty()}">
+
+        <div class="producto-card" th:each="producto : ${productos}">
+
+            <!-- Chip de categoría en la parte superior de la card -->
+            <div class="producto-categoria" th:text="${producto.categoria}"></div>
+
+            <div class="producto-nombre" th:text="${producto.nombre}"></div>
+
+            <!-- Operador Elvis para campo opcional: si no hay descripción muestra texto por defecto -->
+            <div class="producto-descripcion"
+                 th:text="${producto.descripcion ?: 'Sin descripción'}"></div>
+
+            <div class="producto-footer">
+                <span class="producto-precio"
+                      th:text="${'$' + producto.precio}"></span>
+
+                <!--
+                  ALERTA VISUAL DE STOCK BAJO:
+                  th:classappend con condición numérica:
+                  ${producto.stock < 10} ? ' stock-bajo' : ''
+                  → Si el stock es menor a 10 unidades, agrega la clase
+                    "stock-bajo" que en CSS puede mostrar el texto en rojo
+                    o con fondo llamativo para alertar al empleado.
+                  → Si el stock es suficiente, no agrega ninguna clase extra.
+
+                  Este tipo de lógica condicional de presentación es
+                  exactamente para lo que sirve Thymeleaf: decisiones
+                  visuales basadas en datos, sin JavaScript.
+                -->
+                <span class="producto-stock"
+                      th:classappend="${producto.stock < 10} ? ' stock-bajo' : ''"
+                      th:text="${'Stock: ' + producto.stock}"></span>
+            </div>
+
+
+            <!-- ── ACCIONES DE ADMIN ─────────────────────────────────
+                 Solo visibles para ADMIN. Un empleado o visitante
+                 ve las cards pero sin los botones de gestión.
+                 Principio de Menor Privilegio aplicado a la UI.
+            ─────────────────────────────────────────────────────── -->
+            <div class="producto-acciones" sec:authorize="hasRole('ADMIN')">
+
+                <!--
+                  Link a editar con path variable dinámica.
+                  @{/productos/editar/{id}(id=${producto.id})}
+                  → Genera: /productos/editar/7 (si el producto tiene id=7)
+                  Lleva al mismo formulario (form.html) pero en modo edición:
+                  el controlador carga el producto existente en el Model.
+                -->
+                <a th:href="@{/productos/editar/{id}(id=${producto.id})}"
+                   class="btn btn-sm btn-secondary">✏️ Editar</a>
+
+                <!--
+                  Eliminar con confirmación JavaScript.
+                  onclick="return confirm(...)" bloquea la navegación
+                  si el usuario cancela el diálogo.
+                  Sin esta confirmación, un clic accidental eliminaría
+                  el producto sin posibilidad de deshacer.
+                -->
+                <a th:href="@{/productos/eliminar/{id}(id=${producto.id})}"
+                   class="btn btn-sm btn-danger"
+                   onclick="return confirm('¿Eliminar este producto?')">🗑️</a>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- Empty state: cuando no hay resultados para la búsqueda/filtro activo -->
+    <div class="empty-state" th:if="${productos.isEmpty()}">
+        <p>🥐 No se encontraron productos.</p>
+        <!--
+          "Ver todos" limpia todos los filtros volviendo a /productos sin parámetros.
+          Mucho más útil que solo decir "no hay resultados" sin salida.
+        -->
+        <a th:href="@{/productos}" class="btn btn-primary">Ver todos</a>
+    </div>
+
+</main>
+
+<footer class="footer">
+    <p>🍞 Panadería Rodrigo&copy; Marzo 2026 &mdash; Docente Sabina Romero</p>
+</footer>
+
+</body>
+</html>

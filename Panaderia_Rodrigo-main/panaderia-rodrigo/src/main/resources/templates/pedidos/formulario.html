@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<!--
+  Vista FORMULARIO NUEVO PEDIDO: permite crear un pedido asociando
+  un cliente existente con uno o más productos del catálogo.
+
+  Conceptos nuevos en esta vista:
+  - th:object → binding de formulario con un objeto Java
+  - select con relación (cliente.id)
+  - checkboxes múltiples para relación ManyToMany
+  - textarea para campos de texto largo
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>📦 Nuevo Pedido - Panadería Rodrigo</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+</head>
+
+<body>
+
+<!-- ============================================================
+     NAVBAR SIMPLIFICADA
+     En formularios es buena práctica mostrar una navbar reducida:
+     solo el link de "Volver" sin distracciones adicionales.
+     Esto ayuda al usuario a mantenerse enfocado en la tarea actual
+     (completar el formulario) sin tentarlo a navegar a otro lado.
+     ============================================================ -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <span class="brand-icon">🍞</span>
+        <a th:href="@{/}" class="brand-name">Panadería Rodrigo</a>
+    </div>
+    <div class="navbar-menu">
+        <!--
+          "← Volver a Pedidos" como link de navegación en vez de botón:
+          patrón común en formularios de creación para dar una salida
+          clara al usuario sin depender del botón "atrás" del navegador.
+        -->
+        <a th:href="@{/pedidos}" class="nav-link">← Volver a Pedidos</a>
+    </div>
+    <div class="navbar-auth">
+        <span sec:authorize="isAuthenticated()" class="user-info">
+            👤 <span sec:authentication="name"></span>
+        </span>
+        <form th:action="@{/logout}" method="post"
+              sec:authorize="isAuthenticated()" style="display:inline">
+            <button type="submit" class="btn-logout">Salir</button>
+        </form>
+    </div>
+</nav>
+
+
+<main class="main-content">
+    <div class="form-container">
+        <div class="form-card">
+            <h1 class="form-title">📦 Nuevo Pedido</h1>
+
+            <!--
+              BINDING DE FORMULARIO CON th:object:
+              th:object="${pedido}" → vincula el formulario completo con el
+              objeto "pedido" que el controlador agregó al Model.
+
+              En el controlador debe existir algo como:
+                model.addAttribute("pedido", new Pedido());
+
+              Este binding permite usar th:field="*{campo}" en los inputs
+              para que Thymeleaf conecte automáticamente cada campo del form
+              con el atributo correspondiente del objeto Java.
+
+              th:action="@{/pedidos/guardar}" → URL que recibe el POST.
+              En el controlador habrá un método:
+                @PostMapping("/pedidos/guardar")
+                public String guardar(Pedido pedido, ...) { ... }
+            -->
+            <form th:action="@{/pedidos/guardar}"
+                  th:object="${pedido}"
+                  method="post">
+
+
+                <!-- ── SELECTOR DE CLIENTE ───────────────────────────────
+                     Relación ManyToOne: un pedido pertenece a UN cliente.
+                     Se muestra un <select> con todos los clientes disponibles.
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Cliente *</label>
+
+                    <!--
+                      name="cliente.id" → Notación de punto para binding anidado.
+                      Spring MVC es lo suficientemente inteligente para tomar
+                      el valor seleccionado (un Long, el ID del cliente) y
+                      asignarlo a pedido.getCliente().getId() automáticamente.
+
+                      ¿Por qué no usar name="cliente"?
+                      Porque el objeto completo Cliente no puede enviarse por HTML,
+                      solo valores simples. Se envía el ID y en el backend el
+                      servicio se encarga de buscar el Cliente completo en la BD.
+
+                      required → el pedido no puede existir sin cliente asignado.
+                    -->
+                    <select name="cliente.id" class="form-input" required>
+                        <!--
+                          Opción vacía como placeholder del select.
+                          value="" → si el usuario lo deja así, required lo bloquea.
+                          Es una guía visual para que el usuario sepa que debe elegir.
+                        -->
+                        <option value="">-- Seleccionar cliente --</option>
+
+                        <!--
+                          th:each genera un <option> por cada cliente de la lista.
+                          th:value="${c.id}"  → lo que se envía al servidor (el ID)
+                          th:text muestra nombre + email para ayudar a identificar
+                          al cliente correcto cuando hay muchos con nombres similares.
+                          Ejemplo visible: "Juan Pérez (juan@mail.com)"
+                        -->
+                        <option th:each="c : ${clientes}"
+                                th:value="${c.id}"
+                                th:text="${c.nombre + ' (' + c.email + ')'}"></option>
+                    </select>
+                </div>
+
+
+                <!-- ── SELECTOR DE PRODUCTOS (CHECKBOXES) ───────────────
+                     Relación ManyToMany: un pedido puede tener VARIOS productos
+                     y un producto puede estar en VARIOS pedidos.
+                     Los checkboxes son el control HTML ideal para selección múltiple.
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Productos *</label>
+
+                    <div class="productos-check-list">
+                        <!--
+                          PATRÓN CHECKBOX CON LABEL ENVOLVENTE:
+                          Se usa <label> como contenedor del checkbox + texto.
+                          Ventaja UX: el usuario puede hacer clic en cualquier
+                          parte del label (texto o ícono) para marcar/desmarcar,
+                          no solo en el cuadradito del checkbox.
+                          Mucho más fácil de usar, especialmente en móvil.
+                        -->
+                        <label th:each="p : ${productos}" class="check-item">
+
+                            <!--
+                              name="productos" → mismo name para todos los checkboxes.
+                              Cuando se envía el form, Spring recibe un array:
+                              productos=[3, 7, 12] (los IDs marcados).
+                              El controlador los recibe como List<Long> o similar.
+
+                              th:value="${p.id}" → se envía el ID del producto,
+                              no el objeto completo (mismo principio que cliente.id).
+
+                              Si el checkbox NO está marcado, ese ID simplemente
+                              no se incluye en el array enviado al servidor.
+                            -->
+                            <input type="checkbox"
+                                   name="productos"
+                                   th:value="${p.id}"/>
+
+                            <!--
+                              Muestra nombre y precio para que el usuario pueda
+                              tomar una decisión informada al seleccionar productos.
+                              Ejemplo: "Marraqueta - $150"
+                            -->
+                            <span th:text="${p.nombre + ' - $' + p.precio}"></span>
+
+                            <!--
+                              Chip visual de categoría: muestra a qué categoría
+                              pertenece el producto (ej: "PAN", "PASTELERÍA").
+                              Ayuda a escanear la lista más rápido visualmente.
+                            -->
+                            <span class="categoria-chip"
+                                  th:text="${p.categoria}"></span>
+                        </label>
+                    </div>
+                </div>
+
+
+                <!-- ── TEXTAREA DE OBSERVACIONES ────────────────────────
+                     Campo opcional para indicaciones especiales del pedido.
+                     Se usa <textarea> en vez de <input type="text"> porque
+                     permite múltiples líneas de texto (ej: "Sin sal,
+                     entregar en empaque especial, llamar antes de ir").
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Observaciones</label>
+
+                    <!--
+                      name="observaciones" → se vincula al campo observaciones
+                      del objeto Pedido en el controlador.
+
+                      NO tiene "required" porque es un campo opcional.
+                      El asterisco (*) en los labels anteriores es la convención
+                      visual para indicar campos obligatorios.
+
+                      rows="3" → altura inicial del textarea en líneas.
+                      El usuario puede agrandarlo arrastrando la esquina inferior.
+
+                      placeholder → texto de ayuda que desaparece al escribir.
+                      Orienta al usuario sobre qué tipo de información poner aquí.
+                    -->
+                    <textarea name="observaciones"
+                              class="form-input form-textarea"
+                              placeholder="Indicaciones especiales..."
+                              rows="3"></textarea>
+                </div>
+
+
+                <!-- ── BOTONES DE ACCIÓN ─────────────────────────────────
+                     Patrón estándar en formularios: acción principal + cancelar.
+                     El orden importa: acción principal primero (izquierda),
+                     cancelar al lado (derecha o debajo).
+                     Nunca poner "Cancelar" antes que "Guardar" para evitar
+                     que el usuario cancele por accidente.
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-actions">
+                    <!--
+                      type="submit" → envía el formulario al servidor.
+                      Es el único botón que activa el POST a /pedidos/guardar.
+                    -->
+                    <button type="submit" class="btn btn-primary">
+                        💾 Crear Pedido
+                    </button>
+
+                    <!--
+                      Cancelar como <a> (link) en vez de <button type="reset">:
+                      - type="reset" solo limpia el form pero NO sale de la página.
+                      - Un link lleva de vuelta al listado, que es lo que el usuario
+                        realmente espera que pase al cancelar.
+                      btn-ghost → estilo visual menos prominente que btn-primary,
+                      para que el ojo vaya primero al botón de guardar.
+                    -->
+                    <a th:href="@{/pedidos}" class="btn btn-ghost">Cancelar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <p>🍞 Panadería Rodrigo &copy; Marzo 2026 &mdash; Docente Sabina Romero </p>
+</footer>
+
+</body>
+</html>

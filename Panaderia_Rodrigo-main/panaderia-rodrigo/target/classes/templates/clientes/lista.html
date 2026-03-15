@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<!--
+  Vista LISTADO DE CLIENTES: la más "clásica" del proyecto.
+  Si llegaste hasta aquí habiendo visto las otras vistas,
+  vas a notar que ya reconoces el 90% del código.
+
+  ESO ES EL OBJETIVO: los patrones se repiten intencionalmente.
+  En desarrollo real, la consistencia entre vistas hace que el
+  código sea más fácil de mantener, entender y escalar.
+
+  ¿Qué hay de NUEVO aquí que no habíamos visto?
+  → sec:authorize en un <th> de tabla (no solo en botones/links)
+  → La columna "Acciones" completa desaparece para no-ADMIN
+  → Empty state sin botón de acción (solo mensaje)
+  → Búsqueda sin filtro por categoría (más simple que productos)
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>👥 Clientes - Panadería Rodrigo</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap"
+          rel="stylesheet"/>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="navbar-brand">
+        <span class="brand-icon">🍞</span>
+        <a th:href="@{/}" class="brand-name">Panadería Rodrigo</a>
+    </div>
+    <div class="navbar-menu">
+        <a th:href="@{/productos}" class="nav-link">Productos</a>
+        <!-- "active" en Clientes: indica visualmente la sección actual -->
+        <a th:href="@{/clientes}" class="nav-link active">Clientes</a>
+        <a th:href="@{/pedidos}"  class="nav-link">Pedidos</a>
+    </div>
+    <div class="navbar-auth">
+        <span sec:authorize="isAuthenticated()" class="user-info">
+            👤 <span sec:authentication="name"></span>
+            <span sec:authorize="hasRole('ADMIN')" class="badge badge-admin">ADMIN</span>
+        </span>
+        <form th:action="@{/logout}" method="post"
+              sec:authorize="isAuthenticated()" style="display:inline">
+            <button type="submit" class="btn-logout">Salir</button>
+        </form>
+    </div>
+</nav>
+
+
+<main class="main-content">
+
+    <!-- Mensaje flash de éxito (ej: "Cliente eliminado correctamente") -->
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+
+    <div class="page-header">
+        <h1 class="page-title">👥 Clientes</h1>
+        <!--
+          Botón de crear: solo visible para ADMIN.
+          Un EMPLEADO puede VER clientes pero no CREAR nuevos.
+          Principio de Menor Privilegio: acceso mínimo necesario para el rol.
+        -->
+        <a th:href="@{/clientes/nuevo}" class="btn btn-primary"
+           sec:authorize="hasRole('ADMIN')">+ Nuevo Cliente</a>
+    </div>
+
+
+    <!-- ── BARRA DE BÚSQUEDA ─────────────────────────────────────
+         Versión simplificada respecto a productos/lista.html:
+         solo búsqueda por texto, sin filtros por categoría.
+         Los clientes no tienen categorías, así que no se necesitan chips.
+         Cada vista implementa solo los filtros que tienen sentido
+         para su entidad, no una plantilla genérica para todo.
+    ─────────────────────────────────────────────────────────── -->
+    <div class="filtros-bar">
+        <!--
+          method="get" → la búsqueda queda en la URL: /clientes?buscar=María
+          Permite compartir, volver con "atrás" y mantener el término al recargar.
+          th:value="${buscar}" → pre-rellena el input con la búsqueda activa.
+        -->
+        <form th:action="@{/clientes}" method="get" class="search-form">
+            <input type="text"
+                   name="buscar"
+                   class="form-input search-input"
+                   placeholder="🔍 Buscar cliente por nombre..."
+                   th:value="${buscar}"/>
+            <button type="submit" class="btn btn-secondary">Buscar</button>
+            <a th:href="@{/clientes}" class="btn btn-ghost">Limpiar</a>
+        </form>
+    </div>
+
+
+    <!-- ── TABLA DE CLIENTES ─────────────────────────────────────
+         Solo se renderiza si hay clientes. Evita tabla vacía con
+         encabezados flotando solos.
+    ─────────────────────────────────────────────────────────── -->
+    <div class="table-container" th:if="${!clientes.isEmpty()}">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Dirección</th>
+
+                    <!--
+                      ✅ NOVEDAD: sec:authorize en un <th> de encabezado.
+                      Hasta ahora solo habíamos visto sec:authorize en
+                      links, botones y divs. Aquí se aplica a una CELDA
+                      de encabezado de tabla.
+
+                      Si el usuario NO es ADMIN:
+                        → Este <th> desaparece del encabezado
+                        → El <td> de acciones también desaparece (ver abajo)
+                        → La tabla queda limpia sin columna vacía
+
+                      Si el usuario SÍ es ADMIN:
+                        → Aparece el <th> "Acciones"
+                        → Aparecen los botones editar/eliminar en cada fila
+
+                      IMPORTANTE: el sec:authorize en <th> y <td> deben
+                      tener la MISMA condición para que la tabla quede
+                      visualmente consistente. Si difieren, habrá columnas
+                      con encabezado pero sin celdas (o viceversa).
+                    -->
+                    <th sec:authorize="hasRole('ADMIN')">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="cliente : ${clientes}">
+                    <td th:text="${cliente.id}"></td>
+                    <td th:text="${cliente.nombre}"></td>
+                    <td th:text="${cliente.email}"></td>
+
+                    <!--
+                      Operador Elvis para campos opcionales:
+                      teléfono y dirección pueden ser null (no tenían required).
+                      El ?: '-' evita que aparezca "null" en la tabla.
+                    -->
+                    <td th:text="${cliente.telefono  ?: '-'}"></td>
+                    <td th:text="${cliente.direccion ?: '-'}"></td>
+
+                    <!--
+                      Misma condición que el <th>: si no es ADMIN,
+                      esta celda no se renderiza y la tabla sigue teniendo
+                      el mismo número de columnas en encabezado y cuerpo.
+                    -->
+                    <td sec:authorize="hasRole('ADMIN')">
+                        <!--
+                          Botones de acción con path variables dinámicas.
+                          @{/clientes/editar/{id}(id=${cliente.id})}
+                          → /clientes/editar/3  (si el cliente tiene id=3)
+                        -->
+                        <a th:href="@{/clientes/editar/{id}(id=${cliente.id})}"
+                           class="btn btn-sm btn-secondary">✏️</a>
+
+                        <!--
+                          Eliminar con confirmación JavaScript.
+                          Nótese que solo tiene el ícono 🗑️ sin texto,
+                          a diferencia de otros botones que dicen "Editar".
+                          En tablas con poco espacio, los íconos solos
+                          ahorran espacio cuando la acción es clara.
+                        -->
+                        <a th:href="@{/clientes/eliminar/{id}(id=${cliente.id})}"
+                           class="btn btn-sm btn-danger"
+                           onclick="return confirm('¿Eliminar este cliente?')">🗑️</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- ── EMPTY STATE MINIMALISTA ───────────────────────────────
+         DIFERENCIA respecto a otras vistas:
+         Este empty state solo tiene mensaje, sin botón de acción.
+
+         Comparación entre vistas:
+           productos/lista → "No se encontraron productos" + [Ver todos]
+           pedidos/lista   → "No hay pedidos registrados" + [Crear primer pedido]
+           clientes/lista  → "No se encontraron clientes."  (sin botón)
+
+         ¿Por qué no tiene botón acá?
+         Probablemente porque el botón "+ Nuevo Cliente" ya está en el
+         page-header arriba, visible para el ADMIN. Repetirlo abajo
+         sería redundante. El EMPLEADO (que no puede crear) tampoco
+         necesita un CTA ya que no tiene esa acción disponible.
+    ─────────────────────────────────────────────────────────── -->
+    <div class="empty-state" th:if="${clientes.isEmpty()}">
+        <p>👥 No se encontraron clientes.</p>
+    </div>
+
+</main>
+
+<footer class="footer">
+    <p>🍞 Panadería Rodrigo &copy; Marzo 2026 &mdash; Docente Sabina Romero</p>
+</footer>
+
+</body>
+</html>

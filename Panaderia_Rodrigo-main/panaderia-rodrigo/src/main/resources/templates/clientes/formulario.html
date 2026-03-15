@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<!--
+  Vista FORMULARIO DE CLIENTE: funciona igual que el formulario
+  de productos — sirve para CREAR y EDITAR con la misma plantilla.
+
+  Si ya entendiste productos/form.html, este te va a resultar
+  muy familiar. Lo interesante aquí es ver qué CAMBIA y qué se
+  REPITE, porque reconocer patrones es clave para programar bien.
+
+  DIFERENCIAS respecto al form de productos:
+  ✏️  Campos distintos: nombre, email, teléfono, dirección
+  ✏️  type="email" en vez de type="text" → validación nativa del navegador
+  ✏️  El teléfono está en form-row pero solo hay un campo (inusual, ver abajo)
+  ✏️  Dirección NO tiene validación #fields (campo completamente opcional)
+
+  COSAS IGUALES (patrones consolidados):
+  ✅  th:object + th:field para binding
+  ✅  input hidden con el ID para crear/editar
+  ✅  th:text="${titulo}" para título dinámico
+  ✅  #fields.hasErrors() + th:errors para validaciones
+  ✅  Botón guardar + link cancelar
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>👥 Cliente - Panadería Rodrigo</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap"
+          rel="stylesheet"/>
+</head>
+
+<body>
+
+<!-- Navbar reducida de formulario: solo el link "Volver" como salida -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <span class="brand-icon">🍞</span>
+        <a th:href="@{/}" class="brand-name">Panadería Rodrigo</a>
+    </div>
+    <div class="navbar-menu">
+        <a th:href="@{/clientes}" class="nav-link">← Volver a Clientes</a>
+    </div>
+    <div class="navbar-auth">
+        <span sec:authorize="isAuthenticated()" class="user-info">
+            👤 <span sec:authentication="name"></span>
+            <span sec:authorize="hasRole('ADMIN')" class="badge badge-admin">ADMIN</span>
+        </span>
+        <form th:action="@{/logout}" method="post"
+              sec:authorize="isAuthenticated()" style="display:inline">
+            <button type="submit" class="btn-logout">Salir</button>
+        </form>
+    </div>
+</nav>
+
+<main class="main-content">
+    <div class="form-container">
+        <div class="form-card">
+
+            <!--
+              Título dinámico: el controlador decide qué mostrar.
+              Crear  → model.addAttribute("titulo", "Nuevo Cliente")
+              Editar → model.addAttribute("titulo", "Editar: María González")
+            -->
+            <h1 class="form-title" th:text="${titulo}">Cliente</h1>
+
+            <!--
+              Mismo patrón de binding que productos/form.html:
+              th:action  → URL que recibe el POST
+              th:object  → objeto Java vinculado al formulario
+              method     → POST para enviar datos seguros al servidor
+            -->
+            <form th:action="@{/clientes/guardar}"
+                  th:object="${cliente}"
+                  method="post">
+
+                <!--
+                  ID oculto: vacío al crear (JPA genera uno nuevo),
+                  con valor al editar (Spring sabe qué registro actualizar).
+                  Sin este campo, TODOS los envíos crearían clientes nuevos.
+                -->
+                <input type="hidden" th:field="*{id}"/>
+
+
+                <!-- ── NOMBRE ──────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Nombre Completo *</label>
+
+                    <!--
+                      th:field="*{nombre}" genera automáticamente:
+                        name="nombre" + id="nombre" + value="[valor actual]"
+                      El value se pre-rellena al editar. Al crear llega vacío.
+                    -->
+                    <input type="text"
+                           th:field="*{nombre}"
+                           class="form-input"
+                           placeholder="Ej: María González"/>
+
+                    <!-- Mensaje de error si @NotBlank o @Size falla en la entidad -->
+                    <span class="form-error"
+                          th:if="${#fields.hasErrors('nombre')}"
+                          th:errors="*{nombre}"></span>
+                </div>
+
+
+                <!-- ── EMAIL ───────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+
+                    <!--
+                      type="email" → NOVEDAD respecto a los otros formularios.
+                      Activa validación nativa del navegador:
+                        ✅ Verifica que haya un "@" y un dominio válido
+                        ✅ En móvil muestra teclado con @ visible directamente
+                        ✅ Algunos navegadores sugieren emails guardados
+
+                      Pero atención: type="email" solo valida el FORMATO básico
+                      en el cliente. La validación real de que el email existe
+                      o no está duplicado debe hacerse en el backend con:
+                        @Email(message = "Email inválido")
+                        @Column(unique = true)
+                    -->
+                    <input type="email"
+                           th:field="*{email}"
+                           class="form-input"
+                           placeholder="cliente@email.com"/>
+
+                    <span class="form-error"
+                          th:if="${#fields.hasErrors('email')}"
+                          th:errors="*{email}"></span>
+                </div>
+
+
+                <!-- ── TELÉFONO ────────────────────────────────────────── -->
+                <!--
+                  DETALLE INTERESANTE: el teléfono está dentro de un form-row,
+                  pero es el ÚNICO campo en esa fila.
+
+                  ¿Por qué ponerlo en form-row si está solo?
+                  Probablemente el diseñador dejó espacio para agregar un
+                  segundo campo en el futuro (ej: "Teléfono alternativo")
+                  sin tener que reestructurar el HTML.
+                  Es una decisión de diseño anticipado: dejar la puerta abierta.
+
+                  Otra posibilidad: coherencia visual con otras vistas donde
+                  form-row se usa para reducir el ancho de campos cortos
+                  (un número de teléfono no necesita el ancho completo).
+                -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Teléfono</label>
+
+                        <!--
+                          type="text" para teléfono (no type="tel" ni type="number").
+                          ¿Por qué text y no number?
+                            - Los teléfonos pueden tener guiones: 011-4567-8901
+                            - Pueden empezar con + para código de país: +56 9 1234 5678
+                            - type="number" rechazaría esos caracteres
+                          ¿Por qué text y no tel?
+                            - type="tel" muestra teclado numérico en móvil pero
+                              no valida el formato → misma funcionalidad que text
+                            - text es más predecible entre navegadores
+                        -->
+                        <input type="text"
+                               th:field="*{telefono}"
+                               class="form-input"
+                               placeholder="011-4567-8901"/>
+
+                        <span class="form-error"
+                              th:if="${#fields.hasErrors('telefono')}"
+                              th:errors="*{telefono}"></span>
+                    </div>
+                </div>
+
+
+                <!-- ── DIRECCIÓN ───────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Dirección</label>
+
+                    <!--
+                      CAMPO SIN VALIDACIÓN #fields:
+                      Dirección no tiene el span de error debajo.
+                      Esto indica que en la entidad Cliente Java,
+                      el campo "direccion" NO tiene anotaciones de validación
+                      como @NotBlank o @Size.
+
+                      Tampoco tiene "required" en el HTML.
+                      Es un campo 100% opcional: el cliente puede no
+                      tener dirección registrada y eso está bien.
+
+                      Comparación de niveles de opcionalidad en este form:
+                        nombre   → obligatorio (*) + validación backend
+                        email    → obligatorio (*) + validación backend
+                        telefono → opcional (sin *) PERO con validación backend
+                        direccion→ opcional (sin *) Y sin validación backend
+                    -->
+                    <input type="text"
+                           th:field="*{direccion}"
+                           class="form-input"
+                           placeholder="Av. Corrientes 1234, CABA"/>
+                </div>
+
+
+                <!-- Botones estándar: guardar (submit) + cancelar (link) -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Guardar</button>
+                    <a th:href="@{/clientes}" class="btn btn-ghost">Cancelar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <p>🍞 Panadería Rodrigo &copy; Marzo 2026 &mdash; Docente Sabina Romero</p>
+</footer>
+
+</body>
+</html>

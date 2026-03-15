@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<!--
+  Vista de LISTADO DE PEDIDOS: muestra todos los pedidos registrados
+  en el sistema con sus estados, y permite cambiarlos directamente
+  desde la tabla sin entrar a una vista de edición separada.
+
+  Usa ambos dialectos:
+  - xmlns:th  → Thymeleaf (datos dinámicos del servidor)
+  - xmlns:sec → Spring Security (control de visibilidad por rol)
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>📦 Pedidos - Panadería Rodrigo</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+</head>
+
+<body>
+
+<!-- ============================================================
+     NAVBAR
+     Igual al resto de las vistas: consistencia visual entre páginas.
+     La clase "active" en el link de Pedidos le indica al CSS que
+     resalte ese ítem como la sección actual (ej: subrayado, negrita).
+     ============================================================ -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <span class="brand-icon">🍞</span>
+        <a th:href="@{/}" class="brand-name">Panadería Rodrigo</a>
+    </div>
+    <div class="navbar-menu">
+        <a th:href="@{/productos}" class="nav-link">Productos</a>
+        <a th:href="@{/clientes}" class="nav-link">Clientes</a>
+        <!--
+          "active" es una convención CSS muy usada: indica al usuario
+          visualmente en qué sección de la app se encuentra.
+          Se agrega manualmente en cada vista al link correspondiente.
+        -->
+        <a th:href="@{/pedidos}" class="nav-link active">Pedidos</a>
+    </div>
+    <div class="navbar-auth">
+        <span sec:authorize="isAuthenticated()" class="user-info">
+            👤 <span sec:authentication="name"></span>
+            <span sec:authorize="hasRole('ADMIN')" class="badge badge-admin">ADMIN</span>
+        </span>
+        <form th:action="@{/logout}" method="post"
+              sec:authorize="isAuthenticated()" style="display:inline">
+            <button type="submit" class="btn-logout">Salir</button>
+        </form>
+    </div>
+</nav>
+
+
+<main class="main-content">
+
+    <!-- Mensaje flash de éxito (ej: "Pedido creado correctamente")
+         Viene del controlador vía RedirectAttributes.addFlashAttribute() -->
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+
+
+    <!-- ── ENCABEZADO DE PÁGINA ──────────────────────────────────
+         Patrón clásico: título a la izquierda + botón de acción a la derecha.
+         Permite al usuario crear un nuevo pedido desde el listado directamente.
+    ─────────────────────────────────────────────────────────── -->
+    <div class="page-header">
+        <h1 class="page-title">📦 Pedidos</h1>
+        <a th:href="@{/pedidos/nuevo}" class="btn btn-primary">+ Nuevo Pedido</a>
+    </div>
+
+
+    <!-- ── CONTADORES RÁPIDOS ────────────────────────────────────
+         Mini estadísticas que dan contexto inmediato al usuario:
+         cuántos pedidos requieren atención urgente.
+         Los valores vienen del Model del controlador
+         (ej: model.addAttribute("pendientes", service.contarPendientes())).
+    ─────────────────────────────────────────────────────────── -->
+    <div class="stats-mini">
+        <div class="stat-mini">
+            <span>⏳ Pendientes: </span>
+            <strong th:text="${pendientes}">0</strong>
+        </div>
+        <div class="stat-mini">
+            <span>🔥 En preparación: </span>
+            <strong th:text="${enPreparacion}">0</strong>
+        </div>
+    </div>
+
+
+    <!-- ── TABLA DE PEDIDOS ──────────────────────────────────────
+         th:if="${!pedidos.isEmpty()}" → Solo renderiza la tabla si hay
+         datos. Evita mostrar una tabla vacía con encabezados solos,
+         que se ve mal y confunde al usuario.
+         El "!" es el operador NOT en expresiones Thymeleaf.
+    ─────────────────────────────────────────────────────────── -->
+    <div class="table-container" th:if="${!pedidos.isEmpty()}">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Cliente</th>
+                    <th>Productos</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Observaciones</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                <!-- th:each itera la lista "pedidos" generando una <tr> por cada uno -->
+                <tr th:each="pedido : ${pedidos}">
+
+                    <td th:text="${pedido.id}"></td>
+
+                    <!-- Relación ManyToOne: se navega al objeto cliente y se muestra su nombre -->
+                    <td th:text="${pedido.cliente.nombre}"></td>
+
+                    <td>
+                        <!--
+                          ITERACIÓN CON ESTADO (iterStat):
+                          th:each="p, stat : ${pedido.productos}"
+                          Thymeleaf permite declarar una variable de estado (aquí "stat")
+                          que da acceso a información útil sobre la iteración actual:
+
+                            stat.index   → índice actual (empieza en 0)
+                            stat.count   → contador (empieza en 1)
+                            stat.first   → true si es el primer elemento
+                            stat.last    → true si es el último elemento
+                            stat.even    → true si el índice es par
+                            stat.odd     → true si el índice es impar
+                            stat.size    → tamaño total de la lista
+
+                          Aquí se usa stat.last para NO poner coma después
+                          del último producto. Resultado: "Pan, Croissant, Torta"
+                          en vez de "Pan, Croissant, Torta,"
+                        -->
+                        <span th:each="p, stat : ${pedido.productos}"
+                              th:text="${p.nombre + (stat.last ? '' : ', ')}"></span>
+                    </td>
+
+                    <td th:text="${'$' + pedido.total}"></td>
+
+                    <td>
+                        <!-- th:classappend construye la clase CSS del estado dinámicamente
+                             Ej: "estado-pendiente", "estado-entregado", "estado-cancelado"
+                             Cada clase puede tener un color distinto definido en style.css -->
+                        <span class="estado-badge"
+                              th:classappend="${'estado-' + pedido.estado.name().toLowerCase()}"
+                              th:text="${pedido.estado}"></span>
+                    </td>
+
+                    <!-- #temporals.format() formatea LocalDateTime al estilo chileno -->
+                    <td th:text="${#temporals.format(pedido.fechaPedido, 'dd/MM/yyyy HH:mm')}"></td>
+
+                    <!--
+                      OPERADOR ELVIS (?:) de Thymeleaf:
+                      ${pedido.observaciones ?: '-'}
+                      Significa: "si observaciones NO es null ni vacío, muéstralo;
+                      si es null o vacío, muestra '-' como valor por defecto".
+                      Muy útil para campos opcionales que pueden no tener valor.
+                      Equivalente Java: observaciones != null ? observaciones : "-"
+                    -->
+                    <td th:text="${pedido.observaciones ?: '-'}"></td>
+
+
+                    <!-- ── COLUMNA DE ACCIONES ────────────────────────────────
+                         Contiene dos elementos: un select para cambiar estado
+                         y un botón para eliminar (solo ADMIN).
+                    ─────────────────────────────────────────────────────── -->
+                    <td>
+
+                        <!--
+                          CAMBIO DE ESTADO CON SELECT + AUTOSUBMIT:
+                          Patrón de UX que permite cambiar el estado del pedido
+                          directamente desde la tabla sin ir a otra página.
+
+                          th:action="@{/pedidos/estado/{id}(id=${pedido.id})}"
+                          → URL con PATH VARIABLE dinámica. Thymeleaf reemplaza
+                            {id} con el valor real del pedido.
+                            Resultado: /pedidos/estado/5 (si el pedido tiene id=5)
+
+                          method="get" → En este caso se usa GET porque es
+                          una actualización de estado simple. Idealmente sería
+                          POST o PUT para seguir buenas prácticas REST, pero
+                          GET simplifica la implementación del controlador.
+
+                          onchange="this.form.submit()" → JavaScript inline que
+                          envía el formulario automáticamente cuando el usuario
+                          elige una opción distinta en el select.
+                          "this" = el select, "this.form" = el form que lo contiene.
+                        -->
+                        <form th:action="@{/pedidos/estado/{id}(id=${pedido.id})}"
+                              method="get" style="display:inline">
+                            <select name="estado"
+                                    class="form-input form-input-sm"
+                                    onchange="this.form.submit()">
+                                <!--
+                                  Se itera la lista "estados" (enum EstadoPedido del Model)
+                                  para generar un <option> por cada valor posible.
+
+                                  th:value="${e}"    → valor que se envía al servidor
+                                  th:text="${e}"     → texto visible para el usuario
+                                  th:selected="${e == pedido.estado}" → marca como
+                                  seleccionada la opción que coincide con el estado actual.
+                                  Esto hace que el select siempre muestre el estado correcto
+                                  al cargar la página.
+                                -->
+                                <option th:each="e : ${estados}"
+                                        th:value="${e}"
+                                        th:text="${e}"
+                                        th:selected="${e == pedido.estado}"></option>
+                            </select>
+                        </form>
+
+                        <!--
+                          BOTÓN ELIMINAR: solo visible para ADMIN (sec:authorize).
+                          Usa un link GET a /pedidos/eliminar/{id}.
+
+                          onclick="return confirm(...)" → JavaScript inline que
+                          muestra un diálogo de confirmación antes de navegar.
+                          Si el usuario hace clic en "Cancelar", return false
+                          detiene la navegación. Si acepta, return true la permite.
+                          Es una protección básica contra eliminaciones accidentales.
+
+                          ⚠️ Nota técnica: usar GET para eliminar no es ideal según REST
+                          (DELETE sería lo correcto), pero es una simplificación válida
+                          en proyectos educativos donde no se usa JavaScript avanzado.
+                        -->
+                        <a th:href="@{/pedidos/eliminar/{id}(id=${pedido.id})}"
+                           class="btn btn-sm btn-danger"
+                           sec:authorize="hasRole('ADMIN')"
+                           onclick="return confirm('¿Eliminar este pedido?')">🗑️</a>
+                    </td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- ── ESTADO VACÍO (EMPTY STATE) ───────────────────────────
+         Buena práctica de UX: cuando no hay datos, en vez de mostrar
+         nada o una tabla vacía, se muestra un mensaje amigable
+         con una llamada a la acción para crear el primer registro.
+         Se muestra SOLO cuando la lista está vacía (complemento del th:if de arriba).
+    ─────────────────────────────────────────────────────────── -->
+    <div class="empty-state" th:if="${pedidos.isEmpty()}">
+        <p>📦 No hay pedidos registrados.</p>
+        <a th:href="@{/pedidos/nuevo}" class="btn btn-primary">Crear primer pedido</a>
+    </div>
+
+</main>
+
+<footer class="footer">
+    <p>🍞 Panadería Rodrigo &copy; Marzo 2026 &mdash; Docente Sabina Romero</p>
+</footer>
+
+</body>
+</html>

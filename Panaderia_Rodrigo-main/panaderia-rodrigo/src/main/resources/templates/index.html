@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>🍞 Panadería Rodrigo - Inicio</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-brand">
+        <span class="brand-icon">🍞</span>
+        <a th:href="@{/}" class="brand-name">Panadería Rodrigo</a>
+    </div>
+    <div class="navbar-menu">
+        <a th:href="@{/productos}" class="nav-link">Productos</a>
+        <a th:href="@{/clientes}" class="nav-link" sec:authorize="hasAnyRole('ADMIN','EMPLEADO')">Clientes</a>
+        <a th:href="@{/pedidos}" class="nav-link" sec:authorize="hasAnyRole('ADMIN','EMPLEADO')">Pedidos</a>
+    </div>
+    <div class="navbar-auth">
+        <span sec:authorize="isAuthenticated()" class="user-info">
+            👤 <span sec:authentication="name"></span>
+            <span sec:authorize="hasRole('ADMIN')" class="badge badge-admin">ADMIN</span>
+            <span sec:authorize="hasRole('EMPLEADO')" class="badge badge-empleado">EMPLEADO</span>
+        </span>
+        <form th:action="@{/logout}" method="post" sec:authorize="isAuthenticated()" style="display:inline">
+            <button type="submit" class="btn-logout">Salir</button>
+        </form>
+        <a th:href="@{/login}" sec:authorize="isAnonymous()" class="btn-login">Ingresar</a>
+    </div>
+</nav>
+
+<main class="main-content">
+    <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">🍞 Panadería Rodrigo</h1>
+            <p class="hero-subtitle">Artesanal · Tradicional · Con amor desde 1985</p>
+            <a th:href="@{/productos}" class="btn btn-primary btn-lg">Ver Productos</a>
+        </div>
+    </section>
+
+    <!-- STATS (solo para usuarios autenticados) -->
+    <section class="stats-section" sec:authorize="isAuthenticated()">
+        <div class="stats-grid">
+            <div class="stat-card stat-productos">
+                <div class="stat-icon">🥐</div>
+                <div class="stat-number" th:text="${totalProductos}">0</div>
+                <div class="stat-label">Productos</div>
+            </div>
+            <div class="stat-card stat-clientes">
+                <div class="stat-icon">👥</div>
+                <div class="stat-number" th:text="${totalClientes}">0</div>
+                <div class="stat-label">Clientes</div>
+            </div>
+            <div class="stat-card stat-pedidos">
+                <div class="stat-icon">📦</div>
+                <div class="stat-number" th:text="${totalPedidos}">0</div>
+                <div class="stat-label">Pedidos Totales</div>
+            </div>
+            <div class="stat-card stat-pendientes">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-number" th:text="${pedidosPendientes}">0</div>
+                <div class="stat-label">Pendientes</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ACCESO RÁPIDO -->
+    <section class="quick-access" sec:authorize="isAuthenticated()">
+        <h2 class="section-title">Acceso Rápido</h2>
+        <div class="quick-grid">
+            <a th:href="@{/productos}" class="quick-card">
+                <span class="quick-icon">🥖</span>
+                <span class="quick-label">Ver Productos</span>
+            </a>
+            <a th:href="@{/productos/nuevo}" class="quick-card" sec:authorize="hasRole('ADMIN')">
+                <span class="quick-icon">➕</span>
+                <span class="quick-label">Nuevo Producto</span>
+            </a>
+            <a th:href="@{/clientes}" class="quick-card">
+                <span class="quick-icon">👥</span>
+                <span class="quick-label">Gestionar Clientes</span>
+            </a>
+            <a th:href="@{/pedidos}" class="quick-card">
+                <span class="quick-icon">📋</span>
+                <span class="quick-label">Ver Pedidos</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- STOCK BAJO -->
+    <section class="stock-alert" sec:authorize="hasAnyRole('ADMIN','EMPLEADO')"
+             th:if="${stockBajo != null and !stockBajo.isEmpty()}">
+        <h2 class="section-title">⚠️ Productos con Stock Bajo</h2>
+        <div class="stock-list">
+            <div class="stock-item" th:each="p : ${stockBajo}">
+                <span th:text="${p.nombre}"></span>
+                <span class="stock-badge" th:text="${'Stock: ' + p.stock}"></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ÚLTIMOS PEDIDOS -->
+    <section class="ultimos-pedidos" sec:authorize="hasAnyRole('ADMIN','EMPLEADO')"
+             th:if="${ultimosPedidos != null and !ultimosPedidos.isEmpty()}">
+        <h2 class="section-title">📦 Últimos Pedidos</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th>Total</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="pedido : ${ultimosPedidos}">
+                    <td th:text="${pedido.id}"></td>
+                    <td th:text="${pedido.cliente.nombre}"></td>
+                    <td>
+                        <span class="estado-badge"
+                              th:classappend="${'estado-' + pedido.estado.name().toLowerCase()}"
+                              th:text="${pedido.estado}"></span>
+                    </td>
+                    <td th:text="${'$' + pedido.total}"></td>
+                    <td th:text="${#temporals.format(pedido.fechaPedido, 'dd/MM/yyyy HH:mm')}"></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+
+<footer class="footer">
+    <p>🍞 Panadería Rodrigo &copy; Marzo 2026 &mdash; Hecho con Spring Boot &mdash; Docente Sabina Romero</p>
+</footer>
+
+</body>
+</html>

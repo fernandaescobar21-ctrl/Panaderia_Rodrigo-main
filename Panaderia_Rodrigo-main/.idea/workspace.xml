@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="641a51c9-7cd6-444e-ba1a-9c3e7fd7ea12" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitattributes" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mvnw" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mvnw.cmd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/RodrigoApplication.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/config/SecurityConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/controller/ClienteController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/controller/HomeController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/controller/PedidoController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/controller/ProductoController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/loader/DataLoader.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/model/Cliente.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/model/Pedido.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/model/Producto.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/repository/ClienteRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/repository/PedidoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/repository/ProductoRepository.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/rest/ClienteRestController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/rest/PedidoRestController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/rest/ProductoRestController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/service/ClienteService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/service/PedidoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/panaderia/rodrigo/service/ProductoService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/static/css/panaderia.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/clientes/formulario.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/clientes/lista.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/layout/base.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/login.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/pedidos/formulario.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/pedidos/lista.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/productos/formulario.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/templates/productos/lista.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/panaderia/rodrigo/RodrigoApplicationTests.java" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="HTML File" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="3AjW4kZ4GaFbmbTqXxG8W5dmLXX" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;Spring Boot.RodrigoApplication.executor&quot;: &quot;Run&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/JAVA/rodrigo&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.sync&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="E:\JAVA\rodrigo\src\main\resources\templates\layout" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="RodrigoApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="rodrigo" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.panaderia.rodrigo.RodrigoApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.31033.145" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-IU-253.31033.145" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="641a51c9-7cd6-444e-ba1a-9c3e7fd7ea12" name="Changes" comment="" />
+      <created>1773106272117</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1773106272117</updated>
+      <workItem from="1773106274019" duration="2011000" />
+      <workItem from="1773235089975" duration="1023000" />
+      <workItem from="1773267039177" duration="12367000" />
+      <workItem from="1773439563022" duration="7160000" />
+      <workItem from="1773528293654" duration="3962000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

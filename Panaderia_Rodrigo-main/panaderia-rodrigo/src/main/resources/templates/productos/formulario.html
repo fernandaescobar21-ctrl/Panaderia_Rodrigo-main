@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<!--
+  Vista FORMULARIO DE PRODUCTO: sirve para DOS operaciones a la vez:
+  ✅ CREAR un producto nuevo
+  ✅ EDITAR un producto existente
+
+  Este patrón "un formulario para crear Y editar" es muy común en Spring MVC.
+  El controlador decide qué modo usar según si el producto tiene ID o no.
+  En el controlador existirán dos métodos que apuntan a esta misma vista:
+
+    @GetMapping("/productos/nuevo")   → model.addAttribute("producto", new Producto())
+    @GetMapping("/productos/editar/{id}") → model.addAttribute("producto", productoExistente)
+
+  La vista no sabe ni le importa si está creando o editando,
+  simplemente trabaja con el objeto "producto" que recibe.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>🍞 Producto - Panadería Rodrigo</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="navbar-brand">
+        <span class="brand-icon">🍞</span>
+        <a th:href="@{/}" class="brand-name">Panadería Rodrigo</a>
+    </div>
+    <div class="navbar-menu">
+        <a th:href="@{/productos}" class="nav-link">Productos</a>
+    </div>
+    <div class="navbar-auth">
+        <span sec:authorize="isAuthenticated()" class="user-info">
+            👤 <span sec:authentication="name"></span>
+            <span sec:authorize="hasRole('ADMIN')" class="badge badge-admin">ADMIN</span>
+        </span>
+        <form th:action="@{/logout}" method="post"
+              sec:authorize="isAuthenticated()" style="display:inline">
+            <button type="submit" class="btn-logout">Salir</button>
+        </form>
+    </div>
+</nav>
+
+
+<main class="main-content">
+    <div class="form-container">
+        <div class="form-card">
+
+            <!--
+              TÍTULO DINÁMICO:
+              th:text="${titulo}" muestra el valor de la variable "titulo" del Model.
+              El controlador envía títulos distintos según el modo:
+                Crear → model.addAttribute("titulo", "Nuevo Producto")
+                Editar → model.addAttribute("titulo", "Editar: Marraqueta")
+
+              El texto "Producto" dentro del tag es el valor por defecto
+              que ve el desarrollador en el IDE (nunca llega al usuario final).
+            -->
+            <h1 class="form-title" th:text="${titulo}">Producto</h1>
+
+
+            <!--
+              th:object="${producto}" → vincula el form con el objeto producto del Model.
+              A partir de aquí se puede usar la sintaxis *{campo} (asterisco)
+              en lugar de ${producto.campo} (dólar).
+
+              *{campo}     → accede al campo del objeto vinculado en th:object
+              ${variable}  → accede a cualquier variable del Model
+
+              Son equivalentes pero *{} es más limpio dentro de un form con th:object.
+            -->
+            <form th:action="@{/productos/guardar}"
+                  th:object="${producto}"
+                  method="post">
+
+                <!--
+                  CAMPO OCULTO PARA EL ID:
+                  th:field="*{id}" genera automáticamente:
+                    - name="id"
+                    - id="id"
+                    - value="${producto.id}"  (vacío si es nuevo, con valor si es edición)
+
+                  ¿Por qué es importante este campo hidden?
+                  Al editar, el servidor necesita saber QUÉ producto actualizar.
+                  Si no se envía el ID, Spring crea un producto nuevo en vez de actualizar.
+                  Al crear, el ID llega vacío/null y JPA genera uno automáticamente.
+
+                  type="hidden" → el usuario no lo ve, pero viaja en el POST igual.
+                -->
+                <input type="hidden" th:field="*{id}"/>
+
+
+                <!-- ── CAMPO NOMBRE ───────────────────────────────────────
+                     th:field="*{nombre}" hace tres cosas a la vez:
+                       1. name="nombre"       → para que Spring MVC lo reciba
+                       2. id="nombre"         → para vincular con labels
+                       3. value="${producto.nombre}" → pre-rellena en modo edición
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Nombre del Producto *</label>
+                    <input type="text"
+                           th:field="*{nombre}"
+                           class="form-input"
+                           placeholder="Ej: Medialunas de Manteca"/>
+
+                    <!--
+                      MENSAJES DE VALIDACIÓN CON Bean Validation:
+                      #fields.hasErrors('nombre') → pregunta si el campo "nombre"
+                      tiene errores de validación (viene de @NotBlank, @Size, etc.
+                      anotados en la clase Producto de Java).
+
+                      th:errors="*{nombre}" → muestra el mensaje de error
+                      definido en la anotación, por ejemplo:
+                        @NotBlank(message = "El nombre es obligatorio")
+
+                      Este span solo aparece si hay errores.
+                      Si la validación pasa, el span no se renderiza.
+
+                      Flujo completo:
+                        1. Usuario envía form con nombre vacío
+                        2. Controlador recibe @Valid Producto producto, BindingResult result
+                        3. Spring valida y agrega errores al BindingResult
+                        4. Controlador detecta errores y vuelve a mostrar el form
+                        5. Thymeleaf renderiza estos spans con los mensajes de error
+                    -->
+                    <span class="form-error"
+                          th:if="${#fields.hasErrors('nombre')}"
+                          th:errors="*{nombre}"></span>
+                </div>
+
+
+                <!-- ── CAMPO CATEGORÍA (SELECT CON th:field) ─────────────
+                     A diferencia del select de clientes (que usaba name="cliente.id"),
+                     aquí se usa th:field="*{categoria}" porque la categoría es
+                     un valor simple (String o Enum), no un objeto relacionado.
+
+                     th:field en un <select> también maneja el th:selected
+                     automáticamente: marca la opción correcta al editar.
+                     No necesitás agregar th:selected manualmente como en el
+                     listado de pedidos.
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Categoría *</label>
+                    <select th:field="*{categoria}" class="form-input">
+                        <option value="">-- Seleccionar --</option>
+                        <!--
+                          Opciones estáticas (hardcodeadas): valid cuando los valores
+                          no cambian con frecuencia y son pocos.
+                          Alternativa: generarlas dinámicamente con th:each si las
+                          categorías vienen de la BD o de un Enum enviado por el controlador.
+                        -->
+                        <option value="Pan">Pan</option>
+                        <option value="Factura">Factura</option>
+                        <option value="Torta">Torta</option>
+                        <option value="Bizcochuelo">Bizcochuelo</option>
+                        <option value="Especial">Especial</option>
+                    </select>
+                    <span class="form-error"
+                          th:if="${#fields.hasErrors('categoria')}"
+                          th:errors="*{categoria}"></span>
+                </div>
+
+
+                <!-- ── FILA DE DOS COLUMNAS ──────────────────────────────
+                     form-row → clase CSS que usa Flexbox o Grid para poner
+                     los dos campos (precio y stock) lado a lado en pantallas
+                     grandes, y apilados en pantallas pequeñas (responsivo).
+                     Evita desperdiciar espacio horizontal con campos cortos.
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-row">
+
+                    <!-- Campo PRECIO -->
+                    <div class="form-group">
+                        <label class="form-label">Precio ($) *</label>
+                        <input type="number"
+                               th:field="*{precio}"
+                               class="form-input"
+                               <!--
+                                 step="0.01" → permite decimales de 2 cifras (centavos).
+                                 Sin esto, el navegador solo aceptaría números enteros.
+                                 Importante para precios como $150.50.
+
+                                 min="0.01" → validación HTML5 en el cliente: impide
+                                 ingresar precios negativos o cero.
+                                 El servidor TAMBIÉN debe validar esto con @Min o @Positive
+                                 en la entidad Java (nunca confiar solo en el cliente).
+                               -->
+                               step="0.01"
+                               min="0.01"
+                               placeholder="0.00"/>
+                        <span class="form-error"
+                              th:if="${#fields.hasErrors('precio')}"
+                              th:errors="*{precio}"></span>
+                    </div>
+
+                    <!-- Campo STOCK -->
+                    <div class="form-group">
+                        <label class="form-label">Stock *</label>
+                        <input type="number"
+                               th:field="*{stock}"
+                               class="form-input"
+                               <!--
+                                 min="0" → el stock no puede ser negativo.
+                                 Sin step definido, type="number" acepta solo enteros
+                                 por defecto, que es lo correcto para unidades de stock.
+                               -->
+                               min="0"
+                               placeholder="0"/>
+                        <span class="form-error"
+                              th:if="${#fields.hasErrors('stock')}"
+                              th:errors="*{stock}"></span>
+                    </div>
+                </div>
+
+
+                <!-- ── CAMPO DESCRIPCIÓN ─────────────────────────────────
+                     Campo opcional (sin required, sin asterisco en el label).
+                     th:field en textarea también pre-rellena el contenido
+                     al editar, igual que en los inputs.
+                     La descripción va entre las etiquetas <textarea></textarea>,
+                     NO en un atributo value como los inputs.
+                     Thymeleaf con th:field maneja esto automáticamente.
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea th:field="*{descripcion}"
+                              class="form-input form-textarea"
+                              placeholder="Descripción del producto..."
+                              rows="3"></textarea>
+                </div>
+
+
+                <!-- ── CHECKBOX DE DISPONIBILIDAD ────────────────────────
+                     th:field="*{disponible}" en un checkbox maneja automáticamente:
+                       - name="disponible"
+                       - value="true"
+                       - checked (si disponible es true al cargar en modo edición)
+
+                     ¿Por qué el label está DESPUÉS del input aquí?
+                     Para checkboxes el label va después (a la derecha del cuadro).
+                     Para campos de texto el label va antes (arriba del input).
+                     Convención visual de UX muy establecida.
+
+                     Aquí se usa for="disponible" + id del input en vez del
+                     label envolvente del form de pedidos: ambos enfoques son
+                     válidos, este es más semántico y compatible con lectores de pantalla.
+                ─────────────────────────────────────────────────────── -->
+                <div class="form-group form-check">
+                    <input type="checkbox"
+                           th:field="*{disponible}"
+                           id="disponible"/>
+                    <label for="disponible" class="form-label">
+                        Disponible para la venta
+                    </label>
+                </div>
+
+
+                <!-- Botones: guardar (submit) y cancelar (link al listado) -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">💾 Guardar</button>
+                    <a th:href="@{/productos}" class="btn btn-ghost">Cancelar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <p>🍞 Panadería Rodrigo &copy; Marzo 2026 &mdash; Docente Sabina Romero</p>
+</footer>
+
+</body>
+</html>
